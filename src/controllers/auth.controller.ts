@@ -3,97 +3,101 @@ import prisma from "../config/prisma";
 import { hashPassword } from "../utils/hash";
 import { comparePassword } from "../utils/hash";
 import { generateToken } from "../utils/jwt";
+import { z } from "zod";
+import { asyncHandler } from "../utils/asyncHandler";
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { name, email, password } = req.body;
+export const registerSchema = z.object({
+  name: z.string().min(2),
+  email: z.email(),
+  password: z.string().min(6),
+});
 
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+export const register = asyncHandler(async (req: Request, res: Response) => {
+  const { name, email, password } = req.body;
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
 
-    const hashedPassword = await hashPassword(password);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (existingUser) {
+    return res.status(400).json({
       success: false,
-      message: "Server Error",
+      message: "Email already exists",
     });
   }
-};
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
+  const hashedPassword = await hashPassword(password);
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+    },
+  });
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
+  res.status(201).json({
+    success: true,
+    message: "User created successfully",
+    data: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    },
+  });
 
-    const isPasswordValid = await comparePassword(password, user.password);
+  res.status(500).json({
+    success: false,
+    message: "Server Error",
+  });
+});
 
-    if (!isPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
 
-    const token = generateToken(user.id);
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
 
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!user) {
+    return res.status(400).json({
       success: false,
-      message: "Server Error",
+      message: "Invalid email or password",
     });
   }
-};
 
-export const profile = async (req: any, res: Response) => {
+  const isPasswordValid = await comparePassword(password, user.password);
+
+  if (!isPasswordValid) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid email or password",
+    });
+  }
+
+  const token = generateToken(user.id);
+
+  res.json({
+    success: true,
+    message: "Login successful",
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+
+  res.status(500).json({
+    success: false,
+    message: "Server Error",
+  });
+});
+
+export const profile = asyncHandler(async (req: any, res: Response) => {
   const user = await prisma.user.findUnique({
     where: {
       id: req.userId,
@@ -110,4 +114,4 @@ export const profile = async (req: any, res: Response) => {
     success: true,
     data: user,
   });
-};
+});

@@ -20,28 +20,48 @@ export const payBooking = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const payment = await prisma.payment.create({
-      data: {
+    const existingPayment = await prisma.payment.findUnique({
+      where: {
         bookingId: booking.id,
-        amount: booking.totalAmount,
-        status: "SUCCESS",
-        transactionId: crypto.randomUUID(),
       },
     });
 
-    await prisma.booking.update({
-      where: {
-        id: booking.id,
-      },
-      data: {
-        status: "CONFIRMED",
-      },
+    if (existingPayment) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already completed for this booking",
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          amount: booking.totalAmount,
+          status: "SUCCESS",
+          transactionId: crypto.randomUUID(),
+        },
+      });
+
+      const updatedBooking = await tx.booking.update({
+        where: {
+          id: booking.id,
+        },
+        data: {
+          status: "CONFIRMED",
+        },
+      });
+
+      return {
+        payment,
+        booking: updatedBooking,
+      };
     });
 
     res.json({
       success: true,
       message: "Payment successful",
-      data: payment,
+      data: result,
     });
   } catch (error) {
     console.log(error);
