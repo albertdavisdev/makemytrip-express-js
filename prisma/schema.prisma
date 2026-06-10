@@ -49,6 +49,8 @@ model Flight {
   airline     Airline @relation(fields: [airlineId], references: [id])
   fromAirport Airport @relation("DepartureAirport", fields: [fromAirportId], references: [id])
   toAirport   Airport @relation("ArrivalAirport", fields: [toAirportId], references: [id])
+   
+  bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -60,7 +62,27 @@ model User {
   email     String   @unique
   password  String
   role      String   @default("USER")
+  bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id          Int      @id @default(autoincrement())
+
+  bookingCode String   @unique
+
+  userId      Int
+  flightId    Int
+
+  totalAmount Decimal  @db.Decimal(10,2)
+
+  status      String   @default("PENDING")
+
+  user        User     @relation(fields: [userId], references: [id])
+  flight      Flight   @relation(fields: [flightId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

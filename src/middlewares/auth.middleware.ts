@@ -1,47 +1,38 @@
-import { Request, Response } from "express";
-import prisma from "../config/prisma";
-import { hashPassword } from "../utils/hash";
+import { Request, Response, NextFunction } from "express";
+import * as jwt from "jsonwebtoken";
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { name, email, password } = req.body;
+export interface AuthRequest extends Request {
+  userId?: number;
+}
 
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+export const authMiddleware = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authHeader = req.headers.authorization;
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
       success: false,
-      message: "Server Error",
+      message: "Unauthorized",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: number;
+    };
+
+    req.userId = decoded.userId;
+
+    next();
+  } catch {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid token",
     });
   }
 };
