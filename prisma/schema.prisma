@@ -49,7 +49,7 @@ model Flight {
   airline     Airline @relation(fields: [airlineId], references: [id])
   fromAirport Airport @relation("DepartureAirport", fields: [fromAirportId], references: [id])
   toAirport   Airport @relation("ArrivalAirport", fields: [toAirportId], references: [id])
-   
+
   bookings Booking[]
 
   createdAt DateTime @default(now())
@@ -57,11 +57,11 @@ model Flight {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("USER")
+  id       Int       @id @default(autoincrement())
+  name     String
+  email    String    @unique
+  password String
+  role     String    @default("USER")
   bookings Booking[]
 
   createdAt DateTime @default(now())
@@ -69,20 +69,58 @@ model User {
 }
 
 model Booking {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  bookingCode String   @unique
+  bookingCode String @unique
 
-  userId      Int
-  flightId    Int
+  userId   Int
+  flightId Int
 
-  totalAmount Decimal  @db.Decimal(10,2)
+  totalAmount Decimal @db.Decimal(10, 2)
 
-  status      String   @default("PENDING")
+  status String @default("PENDING")
 
-  user        User     @relation(fields: [userId], references: [id])
-  flight      Flight   @relation(fields: [flightId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  flight Flight @relation(fields: [flightId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  passengers Passenger[]
+
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Passenger {
+  id Int @id @default(autoincrement())
+
+  bookingId Int
+
+  firstName String
+  lastName  String
+
+  gender String
+
+  passportNumber String
+
+  nationality String
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id            Int     @id @default(autoincrement())
+  bookingId     Int     @unique
+  amount        Decimal @db.Decimal(10, 2)
+  status        String  @default("PENDING")
+  method        String  @default("FAKE_CARD")
+  transactionId String?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

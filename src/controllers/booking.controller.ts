@@ -75,3 +75,44 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+export const getBookingDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: Number(bookingId),
+        userId: req.userId,
+      },
+      include: {
+        flight: {
+          include: {
+            airline: true,
+            fromAirport: true,
+            toAirport: true,
+          },
+        },
+        passengers: true,
+        payment: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: booking,
+    });
+  } catch {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};

@@ -4,6 +4,8 @@ import airlineRoutes from "./routes/airline.routes";
 import flightRoutes from "./routes/flight.routes";
 import authRoutes from "./routes/auth.routes";
 import bookingRoutes from "./routes/booking.routes";
+import passengerRoutes from "./routes/passenger.routes";
+import paymentRoutes from "./routes/payment.routes";
 
 const app = express();
 
@@ -21,5 +23,7 @@ app.use("/api/airlines", airlineRoutes);
 app.use("/api/flights", flightRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/bookings", passengerRoutes);
+app.use("/api/payments", paymentRoutes);
 
 export default app;
