@@ -1,13 +1,55 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Airport {
+  id      Int    @id @default(autoincrement())
+  code    String @unique
+  name    String
+  city    String
+  country String
+
+  departures Flight[] @relation("DepartureAirport")
+  arrivals   Flight[] @relation("ArrivalAirport")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Airline {
+  id   Int     @id @default(autoincrement())
+  code String  @unique
+  name String
+  logo String?
+
+  flights Flight[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Flight {
+  id              Int      @id @default(autoincrement())
+  flightNumber    String
+  departureTime   DateTime
+  arrivalTime     DateTime
+  durationMinutes Int
+  price           Decimal  @db.Decimal(10, 2)
+  availableSeats  Int      @default(100)
+  stops           Int      @default(0)
+
+  airlineId     Int
+  fromAirportId Int
+  toAirportId   Int
+
+  airline     Airline @relation(fields: [airlineId], references: [id])
+  fromAirport Airport @relation("DepartureAirport", fields: [fromAirportId], references: [id])
+  toAirport   Airport @relation("ArrivalAirport", fields: [toAirportId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
